@@ -2,23 +2,70 @@
 
 namespace App\Controllers;
 
-use App\Controllers\BaseController;
-use CodeIgniter\HTTP\ResponseInterface;
 
 use App\Models\UserModel;
 
+use App\Controllers\BaseController;
+use CodeIgniter\HTTP\ResponseInterface;
+
+use CodeIgniter\Database\Exceptions\DatabaseException;
+
 class UserController extends BaseController
 {
-    public function index()
+
+    public $db;
+
+    public function __construct()
     {
-        #fetch all users from user model return to view
+        // Load the database
+        $this->db = \Config\Database::connect();
+    }
+
+
+   public function index()
+    {
+        // Fetch the UserModel to interact with the user table
         $user = new UserModel();
 
-        dd($user);
-
-        $users = $user->findAll();    
+        // Start the transaction
+        $this->db->transStart();
         
-        return view('users/user_view', ['users' => $users]);
+        try {
+            // Fetch all users
+            $users = $user->get();
+            
+            // $builder = $this->db->table('users');
+
+            // $builder->get();
+
+            // $builder->where('id', '1');
+
+
+            // Option 2: Get the compiled select query (this only generates the query, without executing it)
+            //$compiledQuery = $builder->getCompiledSelect();
+        
+            // Display the compiled query
+            //echo $compiledQuery;
+
+            //die();
+
+            // Complete the transaction
+            $this->db->transComplete();
+            
+            // Check if the transaction was successful
+            if ($this->db->transStatus() === FALSE) {
+                // Transaction failed, so handle the rollback manually
+                $this->db->transRollback();
+                throw new DatabaseException("Transaction failed. Changes rolled back.");
+            }
+
+            // Return the view with users data
+            return view('users/user_view', ['users' => $users]);
+
+        } catch (DatabaseException $e) {
+            // Handle the exception if any error occurs
+            return $this->response->setStatusCode(500)->setBody($e->getMessage());
+        }
     }
 
 
