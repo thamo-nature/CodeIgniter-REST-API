@@ -15,3 +15,4 @@ $routes->post('/users/update/(:num)', 'UserController::update/$1');
 $routes->get('/users/delete/(:num)', 'UserController::delete/$1');
 
 $routes->resource('/api/users', ['controller' => 'UserApiController']);
+$routes->options('(:any)', 'UserApiController::options');
